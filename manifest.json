@@ -1,0 +1,15 @@
+{
+  "name": "私人 AI 健身计划",
+  "short_name": "AI健身",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f4f6f8",
+  "theme_color": "#111827",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='36' fill='%23111827'/%3E%3Cpath d='M48 109h96v18H48zM66 70h60v18H66zM34 90h20v56H34zM138 90h20v56h-20z' fill='%23fff'/%3E%3C/svg%3E",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
+    }
+  ]
+}
