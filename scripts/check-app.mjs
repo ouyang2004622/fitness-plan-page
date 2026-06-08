@@ -33,7 +33,6 @@ const requiredHtml = [
 ];
 
 const requiredJs = [
-  'fetch("https://api.openai.com/v1/responses"',
   "function generateAIPlan()",
   "function buildLocalPlan()",
   "function renderVideos",
@@ -42,12 +41,24 @@ const requiredJs = [
   "VIDEO_LIBRARY"
 ];
 
+const api = readFileSync("api/generate-plan.js", "utf8");
+const requiredApi = [
+  "DEEPSEEK_API_KEY",
+  "https://api.deepseek.com/chat/completions",
+  "response_format",
+  "deepseek-v4-flash"
+];
+
 for (const needle of requiredHtml) {
   if (!html.includes(needle)) throw new Error(`index.html missing ${needle}`);
 }
 
 for (const needle of requiredJs) {
   if (!app.includes(needle)) throw new Error(`app.js missing ${needle}`);
+}
+
+for (const needle of requiredApi) {
+  if (!api.includes(needle)) throw new Error(`api/generate-plan.js missing ${needle}`);
 }
 
 console.log("App static checks passed.");

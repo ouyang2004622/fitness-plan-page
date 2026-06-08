@@ -234,36 +234,21 @@
       </div>
 
       <div class="notice">
-        推荐安全模式：把 OpenAI API Key 放到 Vercel/Cloudflare 的环境变量里，由服务端代理调用。
-        当前 GitHub Pages 版本也支持“本机 Key 模式”，Key 只保存在你的浏览器，不会提交到仓库。
+        DeepSeek Key 只放在后端环境变量里：DEEPSEEK_API_KEY。前端只请求下面这个后端接口，不保存也不提交 Key。
       </div>
 
       <label class="stacked">
-        <span>调用模式</span>
-        <select id="apiModeInput">
-          <option value="browser">本机 Key 模式</option>
-          <option value="proxy">服务端代理模式</option>
-        </select>
-      </label>
-
-      <label class="stacked">
-        <span>OpenAI API Key</span>
-        <input id="apiKeyInput" type="password" autocomplete="off" placeholder="sk-..." />
-      </label>
-
-      <label class="stacked">
-        <span>模型</span>
-        <input id="modelInput" type="text" value="gpt-5.2" />
-      </label>
-
-      <label class="stacked">
-        <span>代理地址</span>
+        <span>后端接口</span>
         <input id="proxyInput" type="text" value="/api/generate-plan" />
+      </label>
+
+      <label class="stacked">
+        <span>DeepSeek 模型</span>
+        <input id="modelInput" type="text" value="deepseek-v4-flash" />
       </label>
 
       <div class="button-row">
         <button class="primary-btn" id="saveAiSettingsBtn" type="button">保存设置</button>
-        <button class="secondary-btn" id="clearApiKeyBtn" type="button">清除 Key</button>
       </div>
     </form>
   </dialog>

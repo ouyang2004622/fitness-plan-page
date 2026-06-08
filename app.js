@@ -2,7 +2,6 @@ const STORAGE = {
   profile: "fitness.profile.v2",
   foods: "fitness.foods.v2",
   settings: "fitness.aiSettings.v2",
-  apiKey: "fitness.openaiKey.v2",
   history: "fitness.planHistory.v2",
   completion: "fitness.completion.v2"
 };
@@ -80,98 +79,15 @@ const VIDEO_LIBRARY = [
   }
 ];
 
-const PLAN_SCHEMA = {
-  type: "object",
-  additionalProperties: false,
-  required: ["title", "summary", "source", "targets", "training", "meals", "shopping", "notes"],
-  properties: {
-    title: { type: "string" },
-    summary: { type: "string" },
-    source: { type: "string" },
-    targets: {
-      type: "object",
-      additionalProperties: false,
-      required: ["protein", "water", "steps", "calories"],
-      properties: {
-        protein: { type: "string" },
-        water: { type: "string" },
-        steps: { type: "string" },
-        calories: { type: "string" }
-      }
-    },
-    training: {
-      type: "object",
-      additionalProperties: false,
-      required: ["focus", "duration", "intensity", "warmup", "exercises", "finisher", "cooldown"],
-      properties: {
-        focus: { type: "string" },
-        duration: { type: "string" },
-        intensity: { type: "string" },
-        warmup: { type: "array", items: { type: "string" } },
-        exercises: {
-          type: "array",
-          items: {
-            type: "object",
-            additionalProperties: false,
-            required: ["id", "name", "sets", "reps", "rest", "cues", "videoId"],
-            properties: {
-              id: { type: "string" },
-              name: { type: "string" },
-              sets: { type: "string" },
-              reps: { type: "string" },
-              rest: { type: "string" },
-              cues: { type: "array", items: { type: "string" } },
-              videoId: { type: "string" }
-            }
-          }
-        },
-        finisher: { type: "array", items: { type: "string" } },
-        cooldown: { type: "array", items: { type: "string" } }
-      }
-    },
-    meals: {
-      type: "array",
-      items: {
-        type: "object",
-        additionalProperties: false,
-        required: ["time", "title", "foods", "prep", "protein"],
-        properties: {
-          time: { type: "string" },
-          title: { type: "string" },
-          foods: { type: "string" },
-          prep: { type: "string" },
-          protein: { type: "string" }
-        }
-      }
-    },
-    shopping: {
-      type: "array",
-      items: {
-        type: "object",
-        additionalProperties: false,
-        required: ["category", "items", "reason"],
-        properties: {
-          category: { type: "string" },
-          items: { type: "array", items: { type: "string" } },
-          reason: { type: "string" }
-        }
-      }
-    },
-    notes: { type: "array", items: { type: "string" } }
-  }
-};
-
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => [...document.querySelectorAll(selector)];
 
 let profile = loadJSON(STORAGE.profile, DEFAULT_PROFILE);
 let foods = loadJSON(STORAGE.foods, DEFAULT_FOODS);
 let settings = loadJSON(STORAGE.settings, {
-  apiMode: "browser",
-  model: "gpt-5.2",
+  model: "deepseek-v4-flash",
   proxyUrl: "/api/generate-plan"
 });
-let apiKey = localStorage.getItem(STORAGE.apiKey) || "";
 let history = loadJSON(STORAGE.history, []);
 let completions = loadJSON(STORAGE.completion, {});
 let selectedVideoTag = "全部";
@@ -274,22 +190,12 @@ function wireEvents() {
 
   $("#saveAiSettingsBtn").addEventListener("click", () => {
     settings = {
-      apiMode: $("#apiModeInput").value,
-      model: $("#modelInput").value.trim() || "gpt-5.2",
+      model: $("#modelInput").value.trim() || "deepseek-v4-flash",
       proxyUrl: $("#proxyInput").value.trim() || "/api/generate-plan"
     };
-    apiKey = $("#apiKeyInput").value.trim();
     saveJSON(STORAGE.settings, settings);
-    if (apiKey) localStorage.setItem(STORAGE.apiKey, apiKey);
     els.settingsDialog.close();
-    toast("AI 设置已保存。");
-  });
-
-  $("#clearApiKeyBtn").addEventListener("click", () => {
-    apiKey = "";
-    localStorage.removeItem(STORAGE.apiKey);
-    $("#apiKeyInput").value = "";
-    toast("本机保存的 API Key 已清除。");
+    toast("DeepSeek 后端接口设置已保存。");
   });
 }
 
@@ -312,10 +218,8 @@ function syncFormFromState() {
 }
 
 function syncSettingsForm() {
-  $("#apiModeInput").value = settings.apiMode;
-  $("#modelInput").value = settings.model || "gpt-5.2";
+  $("#modelInput").value = settings.model || "deepseek-v4-flash";
   $("#proxyInput").value = settings.proxyUrl || "/api/generate-plan";
-  $("#apiKeyInput").value = apiKey;
 }
 
 function collectProfile() {
@@ -605,13 +509,6 @@ async function generateAIPlan() {
   profile = collectProfile();
   saveJSON(STORAGE.profile, profile);
 
-  if (settings.apiMode === "browser" && !apiKey) {
-    syncSettingsForm();
-    els.settingsDialog.showModal();
-    toast("先在设置里保存 OpenAI API Key，或使用本地生成。");
-    return;
-  }
-
   setLoading(true);
   try {
     const plan = await requestAIPlan();
@@ -650,67 +547,16 @@ async function requestAIPlan() {
     ]
   };
 
-  if (settings.apiMode === "proxy") {
-    const response = await fetch(settings.proxyUrl || "/api/generate-plan", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ context })
-    });
-    if (!response.ok) throw new Error(await response.text());
-    return response.json();
-  }
-
-  const response = await fetch("https://api.openai.com/v1/responses", {
+  const response = await fetch(settings.proxyUrl || "/api/generate-plan", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${apiKey}`
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      model: settings.model || "gpt-5.2",
-      instructions: [
-        "你是一个严谨的私人健身和饮食计划助手。",
-        "根据用户资料、器械、已有食材和最近历史，为今天生成可执行计划。",
-        "动作安排要适合家庭哑铃训练；饮食要分时间段；采购清单要补齐缺失营养。",
-        "不要给医学诊断。出现疼痛、眩晕、胸闷时提醒停止训练并咨询专业人士。",
-        "严格返回符合 JSON Schema 的 JSON，不要 Markdown。"
-      ].join("\n"),
-      input: JSON.stringify(context),
-      text: {
-        format: {
-          type: "json_schema",
-          name: "daily_fitness_plan",
-          strict: true,
-          schema: PLAN_SCHEMA
-        }
-      },
-      max_output_tokens: 3500
+      context,
+      model: settings.model || "deepseek-v4-flash"
     })
   });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(errorText || `HTTP ${response.status}`);
-  }
-
-  const data = await response.json();
-  const text = extractResponseText(data);
-  return JSON.parse(text);
-}
-
-function extractResponseText(data) {
-  if (data.output_text) return data.output_text;
-  const chunks = [];
-  for (const item of data.output || []) {
-    for (const content of item.content || []) {
-      if (content.type === "output_text" || content.type === "text") {
-        chunks.push(content.text);
-      }
-    }
-  }
-  const text = chunks.join("").trim();
-  if (!text) throw new Error("AI 响应为空。");
-  return text;
+  if (!response.ok) throw new Error(await response.text());
+  return response.json();
 }
 
 function buildLocalPlan() {
